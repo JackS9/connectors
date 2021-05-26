@@ -17,8 +17,12 @@ class WQPInput(GeoEDFPlugin):
     base_url = "https://www.waterqualitydata.us/data"
     target_path = "data"
  
-    __optional_params = ['start_date','end_date']
+    ##TODO: 
+    #       Make site_id conditionally required -- one and only one of the following:  site_id, bBox, state, county, huc
+    #       Use LocationFilter to generate bBox given proper combination of lat, lon, radius, width, length, min/max_lat, min/max_lon, polygon, shapefile 
+    #       Some params may be lists
     __required_params = ['site_id']
+    __optional_params = ['start_date','end_date','bBox','state','county','organization','huc']
 
     # we use just kwargs since we need to be able to process the list of attributes
     # and their values to create the dependency graph in the GeoEDFInput super class
@@ -33,6 +37,8 @@ class WQPInput(GeoEDFPlugin):
             if param not in kwargs:
                 raise GeoEDFError('Required parameter %s for WQPInput not provided' % param)
 
+	# specific check for conditioal required params
+
         # set all required parameters
         for key in self.__required_params:
             setattr(self,key,kwargs.get(key))
@@ -42,6 +48,12 @@ class WQPInput(GeoEDFPlugin):
             # if key not provided in optional arguments, defaults value to None
             setattr(self,key,kwargs.get(key,None))
 
+        # set defaults if none provided
+        if (self.start_date is None):
+            self.start_date = ''
+        if (self.end_date is None):
+            self.end_date = '05-01-2020'
+
         # class super class init
         super().__init__()
 
@@ -49,11 +61,6 @@ class WQPInput(GeoEDFPlugin):
     # if error, raise exception; if not, return True
 
     def get(self):
-        # set defaults if none provided
-        if (self.start_date == None):
-            self.start_date = ''
-        if (self.end_date == None):
-            self.end_date = '05-01-2020'
 
         # build URL for REST API call
         wqp_url = self.base_url+"/Result/search?siteid="+self.site_id+"&StartDateLo="+self.start_date+"&StartDateHi="+self.end_date+"&mimeType=csv"
